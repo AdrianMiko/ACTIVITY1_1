@@ -332,11 +332,6 @@
             }
             unset($_SESSION['csrf_token']);
 
-            // Validate Email Format
-            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                echo "<script>alert('Invalid email format.'); window.location.href = '../../../forgot-password.php';</script>";
-                exit;
-            }
 
             // Check if the email exists
             $stmt = $this->runQuery("SELECT * FROM user WHERE email = :email");
@@ -345,7 +340,7 @@
 
             if ($stmt->rowCount() == 1) {
                 // Generate a secure reset token
-                $token = bin2hex(random_bytes(50));
+                $token = bin2hex(random_bytes(32));
                 $tokenExpiry = date("Y-m-d H:i:s", strtotime('+1 hour')); // Token valid for 1 hour
 
                 // Store the token and its expiry in the database

@@ -9,7 +9,7 @@ if (empty($_SESSION['csrf_token'])) {
 }
 // Check if token is present
 if(!isset($_GET['token'])){
-    echo "<script>alert('No token provided.'); window.location.href = 'login.php';</script>";
+    echo "<script>alert('No token provided.'); window.location.href = 'index.php';</script>";
     exit;
 }
 
