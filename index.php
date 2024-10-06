@@ -19,7 +19,8 @@
                 <input type="email" name="email" placeholder="Enter Email" required> <br>
                 <input type="password" name="password" placeholder="Enter Password" required> <br>
                 <button type="submit" name="btn-signin">SIGN IN</button>
-            </form>
+            </form><br>
+            <a href="forgot-password.php">Forgot Password?</a><br>
         </div>
     
         <div class="register">

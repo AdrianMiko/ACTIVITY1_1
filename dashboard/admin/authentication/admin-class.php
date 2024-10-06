@@ -323,7 +323,156 @@
             return $stmt;
 
         }
+
+        public function forgotPassword($email, $csrf_token){
+                // CSRF Token Validation
+            if (!isset($csrf_token) || !hash_equals($_SESSION['csrf_token'], $csrf_token)) {
+                echo "<script>alert('Invalid CSRF token.'); window.location.href = '../../../forgot-password.php'; </script>";
+                exit;
+            }
+            unset($_SESSION['csrf_token']);
+
+            // Validate Email Format
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                echo "<script>alert('Invalid email format.'); window.location.href = '../../../forgot-password.php';</script>";
+                exit;
+            }
+
+            // Check if the email exists
+            $stmt = $this->runQuery("SELECT * FROM user WHERE email = :email");
+            $stmt->execute(array(":email" => $email));
+            $userRow = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($stmt->rowCount() == 1) {
+                // Generate a secure reset token
+                $token = bin2hex(random_bytes(50));
+                $tokenExpiry = date("Y-m-d H:i:s", strtotime('+1 hour')); // Token valid for 1 hour
+
+                // Store the token and its expiry in the database
+                $updateStmt = $this->runQuery("UPDATE user SET reset_token = :reset_token, token_expiry = :token_expiry WHERE email = :email");
+                $updateStmt->execute(array(
+                    ":reset_token" => $token,
+                    ":token_expiry" => $tokenExpiry,
+                    ":email" => $email
+                ));
+
+                // Prepare the reset link
+                $resetLink = "localhost/ACTIVITY1/reset-password.php?token=" . $token;
+
+                // Email Subject and Body
+                $subject = "Password Reset Request";
+                $message = "
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset='UTF-8'>
+                    <title>Password Reset</title>
+                    <style>
+                        body{
+                        font-family: Arial, sans-serif;
+                        background-color: #f5f5f5;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    
+                    .container{
+                        max-width: 600px;
+                        margin: 0 auto;
+                        padding: 30px;
+                        background-color: #ffffff;
+                        border-radius: 4px;
+                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    }
+                    
+                    h1{
+                        color: #333333;
+                        font-size: 24px;
+                        margin-bottom: 20px;
+                    }
+
+                    p{
+                        color: #666666;
+                        font-size: 16px;
+                        margin-bottom: 10px;
+                    }
+
+                    .button{
+                        display: inline-block;
+                        padding: 12px 24px;
+                        background-color: #0088cc;
+                        color: #ffffff;
+                        text-decoration: none;
+                        border-radius: 4px;
+                        font-size: 16px;
+                        margin-top: 20px;
+                    }
+
+                    .logo{
+                        display: block;
+                        text-align: center;
+                        margin-bottom: 30px;
+                    }
+                    </style>
+                </head>
+                <body>
+                    <div class='container'>
+                        <h1>Password Reset Request</h1>
+                        <p>Hello,</p>
+                        <p>You requested a password reset. Click the link below to reset your password:</p>
+                        <p><a href='$resetLink'>Reset Password</a></p>
+                        <p>If you did not request this, please ignore this email.</p>
+                        <p>Thank you!</p>
+                    </div>
+                </body>
+                </html>";
+
+                // Send the reset email
+                $this->send_email($email, $message, $subject, $this->smtp_email, $this->smtp_password);
+
+                echo "<script>alert('A password reset link has been sent to your email.'); window.location.href = '../../../';</script>";
+                exit;
+                    } else {
+                        echo "<script>alert('No account found with that email.'); window.location.href = '../../../forgot-password.php';</script>";
+                        exit;
+                    }
+        }
+            public function resetPassword($token, $new_password, $csrf_token){
+    
+        // CSRF Token Validation
+        if (!isset($csrf_token) || !hash_equals($_SESSION['csrf_token'], $csrf_token)) {
+            echo "<script>alert('Invalid CSRF token.'); window.location.href = '../../../reset-password.php?token=$token'; </script>";
+            exit;
+        }
+        unset($_SESSION['csrf_token']);
+
+
+        // Retrieve user with the provided token
+        $stmt = $this->runQuery("SELECT * FROM user WHERE reset_token = :reset_token AND token_expiry >= :current_time");
+        $stmt->execute(array(
+            ":reset_token" => $token,
+            ":current_time" => date("Y-m-d H:i:s")
+        ));
+        $userRow = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($stmt->rowCount() == 1) {
+            // Hash the new password
+            $hash_password = md5($new_password);
+            // Update the password and remove the reset token
+            $updateStmt = $this->runQuery("UPDATE user SET password = :password, reset_token = NULL, token_expiry = NULL WHERE reset_token = :reset_token");
+            $updateStmt->execute(array(
+                ":password" => $hash_password,
+                ":reset_token" => $token
+            ));
+
+            echo "<script>alert('Your password has been successfully reset. You can now log in with your new password.'); window.location.href = '../../../index.php';</script>";
+            exit;
+        } else {
+            echo "<script>alert('Invalid or expired token. Please request a new password reset.'); window.location.href = '../../../forgot-password.php';</script>";
+            exit;
+        }
     }
+
+    }   
 
     if(isset($_POST['btn-signup'])){
         $_SESSION['not_verify_username'] = trim($_POST['username']);
@@ -365,3 +514,20 @@
         $adminSignout->adminSignout();
     }
 
+    if(isset($_POST['btn-forgot-password'])){
+        $csrf_token = trim($_POST['csrf_token']);
+        $email = trim($_POST['email']);
+    
+        $adminForgot = new ADMIN();
+        $adminForgot->forgotPassword($email, $csrf_token);
+    }
+
+    if(isset($_POST['btn-reset-password'])){
+        $csrf_token = trim($_POST['csrf_token']);
+        $token = trim($_POST['token']);
+        $new_password = trim($_POST['new_password']);
+    
+        $adminReset = new ADMIN();
+        $adminReset->resetPassword($token, $new_password, $csrf_token);
+    }
+    
