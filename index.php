@@ -9,8 +9,10 @@
     <link rel="stylesheet" href="src/css/style.css">
     <title>Document</title>
 </head>
+<nav>
+    
+</nav>
 <body>
-    <h1 class="title">HELLO FUTURE ADMINS</h1>
     <div class="container">
         <div class="sign-in">
             <h1>SIGN IN</h1>

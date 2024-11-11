@@ -339,6 +339,7 @@
             $userRow = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($stmt->rowCount() == 1) {
+                $userId = $userRow['id'];
                 // Generate a secure reset token
                 $token = bin2hex(random_bytes(32));
                 $tokenExpiry = date("Y-m-d H:i:s", strtotime('+1 hour')); // Token valid for 1 hour
@@ -352,7 +353,7 @@
                 ));
 
                 // Prepare the reset link
-                $resetLink = "localhost/ACTIVITY1/reset-password.php?token=" . $token;
+                $resetLink = "localhost/ACTIVITY1/reset-password.php?token=" . $token . "&id=" . $userId;
 
                 // Email Subject and Body
                 $subject = "Password Reset Request";
@@ -466,7 +467,7 @@
             exit;
         }
     }
-
+        
     }   
 
     if(isset($_POST['btn-signup'])){
@@ -521,7 +522,16 @@
         $csrf_token = trim($_POST['csrf_token']);
         $token = trim($_POST['token']);
         $new_password = trim($_POST['new_password']);
-    
+        $new_password = trim($_POST['new_password']);
+        $confirm_new_password = trim($_POST['confirm_new_password']);
+
+    // Check if new_password and confirm_new_password match
+    if ($new_password !== $confirm_new_password) {
+        echo "<script>alert('Passwords do not match. Please try again.'); window.location.href = '../../../reset-password.php?token=$token';</script>";
+        exit;
+    }
+
+
         $adminReset = new ADMIN();
         $adminReset->resetPassword($token, $new_password, $csrf_token);
     }
