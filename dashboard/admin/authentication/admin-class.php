@@ -114,11 +114,11 @@
             }
         }
 
-        public function verifyOTP($username, $email, $password, $tokencode, $otp, $csrf_token) {
+        public function verifyOTP($fullname, $email, $password, $tokencode, $otp, $csrf_token) {
             if($otp == $_SESSION['OTP']){
                 unset($_SESSION['OTP']);
                 
-                $this->addAdmin($csrf_token, $username, $email, $password);
+                $this->addAdmin($csrf_token, $fullname, $email, $password);
 
                 $subject = "VERIFICATION SUCCESS";
                 $message = "
@@ -189,9 +189,9 @@
             </html>";
 
             $this->send_email($email, $message, $subject, $this->smtp_email, $this->smtp_password);
-            echo "<script>alert('OTP Verified and Admin Added Successfully, Thank You :)'); window.location.href = '../../../index.php';</script>";
+            echo "<script>alert('OTP Verified and Admin Added Successfully, Thank You :)'); window.location.href = '../../../login.php';</script>";
 
-            unset($_SESSION['not_verify_username']);
+            unset($_SESSION['not_verify_fullname']);
             unset($_SESSION['not_verify_email']);
             unset($_SESSION['not_verify_password']);
 
@@ -204,18 +204,18 @@
          }
      }
 
-        public function addAdmin($csrf_token, $username, $email, $password)
+        public function addAdmin($csrf_token, $fullname, $email, $password)
         {
             $stmt = $this->runQuery("SELECT * FROM user WHERE email = :email");
             $stmt->execute(array(":email" => $email));
 
             if($stmt->rowCount() > 0){
-                echo "<script>alert('Email already Exist.'); window.location.href = '../../../';</script>";
+                echo "<script>alert('Email already Exist.'); window.location.href = '../../../login.php';</script>";
                 exit;
             }
 
             if (!isset($csrf_token) || !hash_equals($_SESSION['csrf_token'], $csrf_token)){
-                echo "<script>alert('Invalid CSRF Token.'); window.location.href = '../../../';</script>";
+                echo "<script>alert('Invalid CSRF Token.'); window.location.href = '../../../login.php';</script>";
                 exit;
             }
 
@@ -223,10 +223,10 @@
 
             $hash_password = md5($password);
 
-            $stmt = $this->runQuery('INSERT INTO user (username, email, password) VALUES (:username, :email, :password)');
+            $stmt = $this->runQuery('INSERT INTO user (fullname, email, password) VALUES (:fullname, :email, :password)');
             
             $exec = $stmt->execute(array(
-                ":username" => $username,
+                ":fullname" => $fullname,
                 ":email" => $email,
                 ":password" => $hash_password
             ));
@@ -237,7 +237,7 @@
     {
         try{
             if(!isset($csrf_token) || !hash_equals($_SESSION['csrf_token'], $csrf_token)){
-                echo "<script>alert('Invalid CSRF token.'); window.location.href = '../../../'; </script>";
+                echo "<script>alert('Invalid CSRF token.'); window.location.href = '../../../login.php'; </script>";
                 exit;
             }
             unset($_SESSION['csrf_token']);
@@ -254,18 +254,18 @@
                         $this->logs($activity, $user_id);
 
                         $_SESSION['adminSession'] = $user_id;
-                        echo "<script>alert('Welcome'); window.location.href = '../'; </script>";
+                        echo "<script>alert('Welcome'); window.location.href = '../../../index.php'; </script>";
                         exit;
                     }else{
-                        echo "<script>alert('Password is incorrect.'); window.location.href = '../../../'; </script>";
+                        echo "<script>alert('Password is incorrect.'); window.location.href = '../../../login.php'; </script>";
                         exit;
                     }
                 }else{
-                    echo "<script>alert('Entered Email is not verify.'); window.location.href = '../../../'; </script>";
+                    echo "<script>alert('Entered Email is not verify.'); window.location.href = '../../../login.php'; </script>";
                     exit;
                 }
             }else{
-                echo "<script>alert('No Account Found.'); window.location.href = '../../../'; </script>";
+                echo "<script>alert('No Account Found.'); window.location.href = '../../../login.php'; </script>";
                 exit;
             }
            
@@ -276,7 +276,7 @@
         public function adminSignout()
         {
             unset($_SESSION['adminSession']);
-            echo "<script>alert('Sign Out Successfully'); window.location.href = '../../../';</script>";
+            echo "<script>alert('Sign Out Successfully'); window.location.href = '../../../login.php';</script>";
             exit;
         }
 
@@ -313,7 +313,7 @@
    
         public function redirect()
         {
-            echo "<script>alert('Admin must loggin first'); window.location.href = '../../../';</script>";
+            echo "<script>alert('Admin must loggin first'); window.location.href = '../../../login.php';</script>";
             exit;
         }
 
@@ -425,7 +425,7 @@
                 // Send the reset email
                 $this->send_email($email, $message, $subject, $this->smtp_email, $this->smtp_password);
 
-                echo "<script>alert('A password reset link has been sent to your email.'); window.location.href = '../../../';</script>";
+                echo "<script>alert('A password reset link has been sent to your email.'); window.location.href = '../../../login.php';</script>";
                 exit;
                     } else {
                         echo "<script>alert('No account found with that email.'); window.location.href = '../../../forgot-password.php';</script>";
@@ -460,7 +460,7 @@
                 ":reset_token" => $token
             ));
 
-            echo "<script>alert('Your password has been successfully reset. You can now log in with your new password.'); window.location.href = '../../../index.php';</script>";
+            echo "<script>alert('Your password has been successfully reset. You can now log in with your new password.'); window.location.href = '../../../login.php';</script>";
             exit;
         } else {
             echo "<script>alert('Invalid or expired token. Please request a new password reset.'); window.location.href = '../../../forgot-password.php';</script>";
@@ -471,7 +471,7 @@
     }   
 
     if(isset($_POST['btn-signup'])){
-        $_SESSION['not_verify_username'] = trim($_POST['username']);
+        $_SESSION['not_verify_fullname'] = trim($_POST['fullname']);
         $_SESSION['not_verify_email'] = trim($_POST['email']);
         $_SESSION['not_verify_password'] = trim($_POST['password']);
 
@@ -484,7 +484,7 @@
 
     if(isset($_POST['btn-verify'])){
         $csrf_token = trim($_POST['csrf_token']);
-        $username =  $_SESSION['not_verify_username'];
+        $fullname =  $_SESSION['not_verify_fullname'];
         $email = $_SESSION['not_verify_email'];
         $password =  $_SESSION['not_verify_password'];
 
@@ -492,7 +492,7 @@
         $otp = trim($_POST['otp']);
 
         $adminVerify = new ADMIN();
-        $adminVerify->verifyOTP($username, $email, $password, $tokencode, $otp, $csrf_token);
+        $adminVerify->verifyOTP($fullname, $email, $password, $tokencode, $otp, $csrf_token);
 
     }
 

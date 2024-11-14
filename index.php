@@ -9,32 +9,14 @@
     <link rel="stylesheet" href="src/css/style.css">
     <title>Document</title>
 </head>
-<nav>
-    
-</nav>
 <body>
-    <div class="container">
-        <div class="sign-in">
-            <h1>SIGN IN</h1>
-            <form action="dashboard/admin/authentication/admin-class.php" method="POST">
-                <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-                <input type="email" name="email" placeholder="Enter Email" required> <br>
-                <input type="password" name="password" placeholder="Enter Password" required> <br>
-                <button type="submit" name="btn-signin">SIGN IN</button>
-            </form><br>
-            <a href="forgot-password.php">Forgot Password?</a><br>
-        </div>
-    
-        <div class="register">
-            <h1>REGISTRATION</h1>
-            <form action="dashboard/admin/authentication/admin-class.php" method ="POST">
-                <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-                <input type="text" name="username" placeholder="Enter Username" required><br>
-                <input type="email" name="email" placeholder="Enter Email" required> <br>
-                <input type="password" name="password" placeholder="Enter Password" required> <br>
-                <button type="submit" name="btn-signup">SIGN UP</button>
-            </form>
-        </div>
+
+<?php include 'header.php'; ?>
+<div class="layout">
+    <?php include 'side_navbar.php'; ?>
+    <div class="main-content">
+        <?php include 'main.php'; ?>
     </div>
+</div>
 </body>
 </html>
